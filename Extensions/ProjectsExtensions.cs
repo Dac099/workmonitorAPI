@@ -1,0 +1,15 @@
+using Microsoft.AspNetCore.Builder;
+using workmonitorAPI.Services;
+using workmonitorAPI.Services.Interfaces;
+
+namespace workmonitorAPI.Extensions;
+
+public static class ProjectsExtensions
+{
+    public static WebApplicationBuilder RegisterProjectsServices(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+
+        return builder;
+    }
+}
