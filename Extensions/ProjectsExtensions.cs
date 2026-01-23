@@ -9,6 +9,7 @@ public static class ProjectsExtensions
     public static WebApplicationBuilder RegisterProjectsServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+        builder.Services.AddScoped<IBoardService, BoardService>();
 
         return builder;
     }

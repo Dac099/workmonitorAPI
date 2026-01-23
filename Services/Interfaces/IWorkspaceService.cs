@@ -7,7 +7,7 @@ namespace workmonitorAPI.Services.Interfaces;
 
 public interface IWorkspaceService
 {
-    Task<Workspace> CreateAsync(CreateWorkspaceDto dto);
+    Task<WorkspaceDto> CreateAsync(CreateWorkspaceDto dto);
     Task<IEnumerable<WorkspaceDto>> GetAllAsync();
     Task UpdateAsync(Guid id, UpdateWorkspaceDto dto);
     Task DeleteAsync(Guid id);

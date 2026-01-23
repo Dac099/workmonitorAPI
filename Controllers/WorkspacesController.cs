@@ -21,8 +21,8 @@ public class WorkspacesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateWorkspaceDto dto)
     {
-        var workspace = await _workspaceService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, workspace);
+        var workspaceDto = await _workspaceService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = workspaceDto.Id }, workspaceDto);
     }
 
     [HttpGet]

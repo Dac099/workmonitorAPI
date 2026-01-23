@@ -19,7 +19,7 @@ public class WorkspaceService : IWorkspaceService
         _db = db;
     }
 
-    public async Task<Workspace> CreateAsync(CreateWorkspaceDto dto)
+    public async Task<WorkspaceDto> CreateAsync(CreateWorkspaceDto dto)
     {
         var workspace = new Workspace
         {
@@ -31,7 +31,7 @@ public class WorkspaceService : IWorkspaceService
 
         _db.Workspaces.Add(workspace);
         await _db.SaveChangesAsync();
-        return workspace;
+        return new WorkspaceDto(workspace.Id, workspace.Name, workspace.Description);
     }
 
     public async Task UpdateAsync(Guid id, UpdateWorkspaceDto dto)
