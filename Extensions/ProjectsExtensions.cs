@@ -10,6 +10,7 @@ public static class ProjectsExtensions
     {
         builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
         builder.Services.AddScoped<IBoardService, BoardService>();
+        builder.Services.AddScoped<IGroupService, GroupService>();
 
         return builder;
     }
