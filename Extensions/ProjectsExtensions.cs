@@ -12,6 +12,7 @@ public static class ProjectsExtensions
         builder.Services.AddScoped<IBoardService, BoardService>();
         builder.Services.AddScoped<IGroupService, GroupService>();
         builder.Services.AddScoped<IColumnService, ColumnService>();
+        builder.Services.AddScoped<IItemService, ItemService>();
 
         return builder;
     }
