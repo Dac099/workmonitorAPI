@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using workmonitorAPI.Data;
+using workmonitorAPI.DTOs.ChatDTOs;
 using workmonitorAPI.DTOs.GroupDTOs;
+using workmonitorAPI.DTOs.ItemDTOs;
+using workmonitorAPI.DTOs.TableValueDTOs;
 using workmonitorAPI.Models;
 using workmonitorAPI.Services.Interfaces;
 
@@ -79,6 +82,74 @@ public class GroupService : IGroupService
             .OrderBy(g => g.Position)
             .Select(g => new GroupDto(g.Id, g.BoardId, g.Name, g.Position, g.Color))
             .ToListAsync();
+    }
+
+    public async Task<GroupDetailDto> GetByIdAsync(Guid id)
+    {
+        var group = await _db.Groups
+            .AsNoTracking()
+            .Where(g => g.Id == id && g.DeletedAt == null)
+            .Select(g => new GroupDto(g.Id, g.BoardId, g.Name, g.Position, g.Color))
+            .FirstOrDefaultAsync()
+            ?? throw new KeyNotFoundException("Group not found");
+
+        var items = await _db.Items
+            .AsNoTracking()
+            .Where(i => i.GroupId == id && i.DeletedAt == null)
+            .OrderBy(i => i.Position)
+            .Select(i => new ItemDto(i.Id, i.GroupId, i.Name, i.Position, i.ProjectId))
+            .ToListAsync();
+
+        var itemIds = items.Select(i => i.Id).ToList();
+
+        var values = await _db.TableValues
+            .AsNoTracking()
+            .Where(tv => tv.ItemId != null && itemIds.Contains(tv.ItemId.Value) && tv.DeletedAt == null)
+            .Join(
+                _db.Columns.AsNoTracking(),
+                tv => tv.ColumnId,
+                c => c.Id,
+                (tv, c) => new { tv.Id, tv.ItemId, tv.ColumnId, tv.Value, ColumnType = c.Type }
+            )
+            .ToListAsync();
+
+        var chats = await _db.Chats
+            .AsNoTracking()
+            .Where(c => c.ItemId != null && itemIds.Contains(c.ItemId.Value) && c.DeletedAt == null)
+            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks))
+            .ToListAsync();
+
+        var valuesByItem = values
+            .GroupBy(v => v.ItemId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(v => new TableValueWithTypeDto(v.Id, v.ItemId, v.ColumnId, v.Value, v.ColumnType)).ToList()
+            );
+
+        var chatsByItem = chats
+            .GroupBy(c => c.ItemId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks)).ToList()
+            );
+
+        var itemDtos = items.Select(i =>
+        {
+            valuesByItem.TryGetValue(i.Id, out var itemValues);
+            chatsByItem.TryGetValue(i.Id, out var itemChats);
+
+            return new ItemWithValuesDto(
+                i.Id,
+                i.GroupId,
+                i.Name,
+                i.Position,
+                i.ProjectId,
+                itemValues ?? new List<TableValueWithTypeDto>(),
+                itemChats ?? new List<ChatDto>()
+            );
+        }).ToList();
+
+        return new GroupDetailDto(group.Id, group.BoardId, group.Name, group.Position, group.Color, itemDtos);
     }
 
     public async Task CopyToAsync(Guid groupId, Guid targetBoardId)

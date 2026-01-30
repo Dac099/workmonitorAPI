@@ -60,6 +60,20 @@ public class GroupsController : ControllerBase
         return Ok(groups);
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GroupDetailDto>> GetById(Guid id)
+    {
+        try
+        {
+            var group = await _groupService.GetByIdAsync(id);
+            return Ok(group);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpPost("{id}/copy")]
     public async Task<IActionResult> Copy(Guid id, [FromBody] CopyGroupRequestDto request)
     {

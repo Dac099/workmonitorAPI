@@ -8,6 +8,7 @@ namespace workmonitorAPI.Services.Interfaces;
 public interface IGroupService
 {
     Task<GroupDto> CreateAsync(CreateGroupDto dto);
+    Task<GroupDetailDto> GetByIdAsync(Guid id);
     Task DeleteAsync(Guid id);
     Task UpdateAsync(Guid id, UpdateGroupDto dto);
     Task<IEnumerable<GroupDto>> GetByBoardIdAsync(Guid boardId);
