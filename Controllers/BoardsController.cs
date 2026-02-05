@@ -39,6 +39,13 @@ public class BoardsController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<BoardWithWorkspaceNameDto>>> GetAll()
+    {
+        var boards = await _boardService.GetAllWithWorkspaceNameAsync();
+        return Ok(boards);
+    }
+
     [HttpGet("workspace/{workspaceId}")]
     public async Task<ActionResult<IEnumerable<BoardDto>>> GetByWorkspaceId(Guid workspaceId)
     {

@@ -13,4 +13,5 @@ public interface IBoardService
     Task DeleteAsync(Guid id);
     Task UpdateAsync(Guid id, UpdateBoardDto dto);
     Task<IEnumerable<BoardDto>> GetByWorkspaceIdAsync(Guid workspaceId);
+    Task<IEnumerable<BoardWithWorkspaceNameDto>> GetAllWithWorkspaceNameAsync();
 }

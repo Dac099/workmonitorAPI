@@ -7,6 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddValidation();
 builder.AddWorkmonitorDb();
+builder.AddDefaultCors();
 builder.RegisterProjectsServices();
 
 var app = builder.Build();
@@ -14,11 +15,13 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-}else
+}
+else
 {
     app.UseHttpsRedirection();
 }
 
+app.UseDefaultCors();
 app.UseAuthorization();
 
 app.MapControllers();

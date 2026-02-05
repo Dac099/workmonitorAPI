@@ -77,4 +77,18 @@ public class BoardService : IBoardService
             .Select(b => new BoardDto(b.Id, b.WorkspaceId, b.Name, b.Description))
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<BoardWithWorkspaceNameDto>> GetAllWithWorkspaceNameAsync()
+    {
+        return await _db.Boards
+            .AsNoTracking()
+            .Where(b => b.DeletedAt == null)
+            .Select(b => new BoardWithWorkspaceNameDto(
+                b.Id,
+                b.WorkspaceId,
+                b.Workspace.Name,
+                b.Name,
+                b.Description))
+            .ToListAsync();
+    }
 }
