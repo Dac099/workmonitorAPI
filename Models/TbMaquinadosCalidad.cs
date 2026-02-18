@@ -52,4 +52,6 @@ public partial class TbMaquinadosCalidad
     public int? CantRechazada { get; set; }
 
     public DateTime? FechaRechazo { get; set; }
+
+    public string? RazonSinProceso { get; set; }
 }

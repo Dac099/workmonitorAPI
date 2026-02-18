@@ -99,5 +99,9 @@ public partial class Maquinado
 
     public int? MaquiPadre { get; set; }
 
+    public bool? RechazoCalidad { get; set; }
+
+    public int? IdMaquinadoCalidad { get; set; }
+
     public virtual TbArticulo? NumParteNavigation { get; set; }
 }

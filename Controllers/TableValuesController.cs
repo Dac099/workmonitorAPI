@@ -45,6 +45,23 @@ public class TableValuesController : ControllerBase
         }
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        try
+        {
+            var deleted = await _tableValueService.DeleteAsync(id);
+            if (!deleted)
+                return Conflict(new { message = "El TableValue no puede eliminarse porque está asociado a un item." });
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpGet("status/board/{boardId}")]
     public async Task<IActionResult> GetStatusValuesGroupedByColumn(Guid boardId)
     {

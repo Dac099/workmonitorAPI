@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using workmonitorAPI.Models;
 
 namespace workmonitorAPI.Data;
@@ -30,6 +29,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<Comentario> Comentarios { get; set; }
 
     public virtual DbSet<ComentarioVenta> ComentarioVentas { get; set; }
+
+    public virtual DbSet<DefinedColumnsValue> DefinedColumnsValues { get; set; }
 
     public virtual DbSet<Employee> Employees { get; set; }
 
@@ -471,6 +472,23 @@ public partial class AppDbContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("id_cotizacion");
             entity.Property(e => e.ParentComentarioId).HasColumnName("parent_comentario_id");
+        });
+
+        modelBuilder.Entity<DefinedColumnsValue>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__definedC__3213E83FE22CCA4D");
+
+            entity.ToTable("definedColumnsValues");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .IsFixedLength()
+                .HasColumnName("name");
+            entity.Property(e => e.Value)
+                .IsUnicode(false)
+                .HasColumnName("value");
         });
 
         modelBuilder.Entity<Employee>(entity =>
@@ -1052,6 +1070,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IdEquipo)
                 .HasMaxLength(50)
                 .HasColumnName("Id_Equipo");
+            entity.Property(e => e.IdMaquinadoCalidad).HasColumnName("id_maquinado_calidad");
             entity.Property(e => e.IdMoneda)
                 .HasMaxLength(10)
                 .HasColumnName("id_moneda");
@@ -1091,6 +1110,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("Precio_Kg");
             entity.Property(e => e.Prioridad).HasMaxLength(25);
             entity.Property(e => e.ReTrabajo).HasColumnName("re_trabajo");
+            entity.Property(e => e.RechazoCalidad).HasColumnName("rechazo_calidad");
             entity.Property(e => e.Rev).HasMaxLength(5);
             entity.Property(e => e.Spare).HasMaxLength(55);
             entity.Property(e => e.TiempoProgramacion).HasColumnName("tiempo_programacion");
@@ -2979,6 +2999,9 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("num_parte");
             entity.Property(e => e.NumSalida).HasColumnName("num_salida");
             entity.Property(e => e.PesoTeorico).HasColumnName("peso_teorico");
+            entity.Property(e => e.RazonSinProceso)
+                .HasMaxLength(100)
+                .HasColumnName("razon_sin_proceso");
             entity.Property(e => e.Revision)
                 .HasMaxLength(50)
                 .IsUnicode(false)
