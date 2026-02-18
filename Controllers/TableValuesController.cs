@@ -44,4 +44,11 @@ public class TableValuesController : ControllerBase
             return NotFound();
         }
     }
+
+    [HttpGet("status/board/{boardId}")]
+    public async Task<IActionResult> GetStatusValuesGroupedByColumn(Guid boardId)
+    {
+        var result = await _tableValueService.GetStatusValuesGroupedByColumnAsync(boardId);
+        return Ok(result);
+    }
 }

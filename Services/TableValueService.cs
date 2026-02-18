@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using workmonitorAPI.Data;
@@ -50,5 +52,36 @@ public class TableValueService : ITableValueService
 
         _db.TableValues.Update(tableValue);
         await _db.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<StatusValuesByColumnDto>> GetStatusValuesGroupedByColumnAsync(Guid boardId)
+    {
+        var rows = await _db.TableValues
+            .AsNoTracking()
+            .Include(tv => tv.Column)
+            .Where(tv =>
+                tv.ItemId != null &&
+                tv.DeletedAt == null &&
+                tv.Column.BoardId == boardId &&
+                tv.Column.Type == "status" &&
+                tv.Column.DeletedAt == null)
+            .ToListAsync();
+
+        var result = rows
+            .GroupBy(tv => new { tv.ColumnId, tv.Column.Name })
+            .Select(g => new StatusValuesByColumnDto(
+                g.Key.ColumnId,
+                g.Key.Name,
+                g.DistinctBy(tv => tv.Value)
+                 .Select(tv => new TableValueDto(
+                     tv.Id,
+                     tv.ItemId,
+                     tv.ColumnId,
+                     tv.Value
+                 )).ToList()
+            ))
+            .ToList();
+
+        return result;
     }
 }
