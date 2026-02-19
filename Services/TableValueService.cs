@@ -13,10 +13,30 @@ namespace workmonitorAPI.Services;
 public class TableValueService : ITableValueService
 {
     private readonly AppDbContext _db;
-
+    
     public TableValueService(AppDbContext db)
     {
         _db = db;
+    }
+
+    public async Task<IEnumerable<DefinedColumnsValue>> GetDefinedValuesByTypeAsync(GetDefinedValuesDto dto)
+    {
+        if (IsCompanyColumn(dto.ColumnType))
+        {
+            return await _db.DefinedColumnsValues
+                .Where(v => v.Name == "company")
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        else if (IsStatusColumn(dto.ColumnType))
+        {
+            return await _db.DefinedColumnsValues
+                .Where(v => v.Name == "status")
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        return new List<DefinedColumnsValue>();
     }
 
     /*

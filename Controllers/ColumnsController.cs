@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using workmonitorAPI.DTOs.ColumnDTOs;
+using workmonitorAPI.DTOs.TableValueDTOs;
 using workmonitorAPI.Services.Interfaces;
 
 namespace workmonitorAPI.Controllers;
@@ -12,17 +13,20 @@ namespace workmonitorAPI.Controllers;
 public class ColumnsController : ControllerBase
 {
     private readonly IColumnService _columnService;
+    private readonly ITableValueService _tableValueService;
 
-    public ColumnsController(IColumnService columnService)
+    public ColumnsController(IColumnService columnService, ITableValueService tableValueService)
     {
         _columnService = columnService;
+        _tableValueService = tableValueService;
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateColumnDto dto)
     {
         var columnDto = await _columnService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetByBoardId), new { boardId = columnDto.BoardId }, columnDto);
+        var definedValues = await _tableValueService.GetDefinedValuesByTypeAsync(new GetDefinedValuesDto(dto.Name));
+        return CreatedAtAction(nameof(GetByBoardId), new { boardId = columnDto.BoardId }, new { column = columnDto, definedValues });
     }
 
     [HttpPut("{id}")]
