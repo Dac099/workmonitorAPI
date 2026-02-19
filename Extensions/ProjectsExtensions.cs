@@ -14,6 +14,7 @@ public static class ProjectsExtensions
         builder.Services.AddScoped<IColumnService, ColumnService>();
         builder.Services.AddScoped<IItemService, ItemService>();
         builder.Services.AddScoped<ITableValueService, TableValueService>();
+        builder.Services.AddScoped<IProyectService, ProyectService>();
 
         return builder;
     }

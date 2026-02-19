@@ -13,6 +13,21 @@ namespace workmonitorAPI.Services;
 public class TableValueService : ITableValueService
 {
     private readonly AppDbContext _db;
+    private static readonly HashSet<string> _companyKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "company", "empresa", "compañia", "compania", "cliente", "client"
+    };
+
+    private static readonly HashSet<string> _statusKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "status", "estado", "estatus", "estado", "situacion", "situación", "estados", "statuses"
+    };
+
+    private static bool IsCompanyColumn(string name) =>
+        _companyKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsStatusColumn(string name) =>
+        _statusKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
     
     public TableValueService(AppDbContext db)
     {
@@ -114,95 +129,66 @@ public class TableValueService : ITableValueService
         return true;
     }
 
-    // Keywords that identify "company" or "status" columns (EN + ES variants)
-    private static readonly HashSet<string> _companyKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "company", "empresa", "compañia", "compania", "cliente", "client"
-    };
-
-    private static readonly HashSet<string> _statusKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "status", "estado", "estatus", "estado", "situacion", "situación"
-    };
-
-    private static bool IsCompanyColumn(string name) =>
-        _companyKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
-
-    private static bool IsStatusColumn(string name) =>
-        _statusKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
-
     public async Task<IEnumerable<StatusValuesByColumnDto>> GetStatusValuesGroupedByColumnAsync(Guid boardId)
     {
-        // 1. Get all active columns for the board
-        var boardColumns = await _db.Columns
+        var columns = await _db.Columns
             .AsNoTracking()
-            .Where(c => c.BoardId == boardId && c.DeletedAt == null)
+            .Where(c => c.BoardId == boardId && c.Type == "status" && c.DeletedAt == null)
             .ToListAsync();
 
-        // 2. Identify company-like and status-like columns
-        var companyColumns = boardColumns.Where(c => IsCompanyColumn(c.Name)).ToList();
-        var statusColumns  = boardColumns.Where(c => IsStatusColumn(c.Name)).ToList();
-        var definedColumnIds = companyColumns.Concat(statusColumns)
-            .Select(c => c.Id)
-            .ToHashSet();
+        if (columns.Count == 0)
+            return [];
 
-        // 3. Load DefinedColumnsValues grouped by Name (company / status)
+        var columnIds = columns.Select(c => c.Id).ToList();
+
+        var tableValues = await _db.TableValues
+            .AsNoTracking()
+            .Where(tv => columnIds.Contains(tv.ColumnId) && tv.ItemId == null && tv.DeletedAt == null)
+            .ToListAsync();            
+
         var definedValues = await _db.DefinedColumnsValues
             .AsNoTracking()
             .ToListAsync();
 
         var companyDefinedValues = definedValues
-            .Where(d => d.Name != null && IsCompanyColumn(d.Name))
+            .Where(d => d.Name != null && d.Name.Trim().Equals("company", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         var statusDefinedValues = definedValues
-            .Where(d => d.Name != null && IsStatusColumn(d.Name))
+            .Where(d => d.Name != null && d.Name.Trim().Equals("status", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        // 4. Get TableValues as before (status-type columns for the board)
-        var rows = await _db.TableValues
-            .AsNoTracking()
-            .Include(tv => tv.Column)
-            .Where(tv =>
-                tv.ItemId == null &&
-                tv.DeletedAt == null &&
-                tv.Column.BoardId == boardId &&
-                tv.Column.Type == "status" &&
-                tv.Column.DeletedAt == null)
-            .ToListAsync();
 
-        // 5. Build result, replacing values for company/status columns with DefinedColumnsValues
-        var result = rows
-            .GroupBy(tv => new { tv.ColumnId, tv.Column.Name })
-            .Select(g =>
+
+        var result = new List<StatusValuesByColumnDto>();
+
+        foreach (var column in columns)
+        {
+            List<TableValueDto> values;
+
+            if (IsCompanyColumn(column.Name))
             {
-                List<TableValueDto> values;
+                values = companyDefinedValues
+                    .Select(d => new TableValueDto(Guid.Empty, null, column.Id, d.Value))
+                    .ToList();
+            }
+            else if (IsStatusColumn(column.Name))
+            {
+                values = statusDefinedValues
+                    .Select(d => new TableValueDto(Guid.Empty, null, column.Id, d.Value))
+                    .ToList();
+            }
+            else
+            {
+                values = tableValues
+                    .Where(tv => tv.ColumnId == column.Id)
+                    .DistinctBy(tv => tv.Value)
+                    .Select(tv => new TableValueDto(tv.Id, tv.ItemId, tv.ColumnId, tv.Value))
+                    .ToList();
+            }
 
-                if (companyColumns.Any(c => c.Id == g.Key.ColumnId))
-                {
-                    // Replace with company defined values
-                    values = companyDefinedValues
-                        .Select(d => new TableValueDto(Guid.Empty, null, g.Key.ColumnId, d.Value))
-                        .ToList();
-                }
-                else if (statusColumns.Any(c => c.Id == g.Key.ColumnId))
-                {
-                    // Replace with status defined values
-                    values = statusDefinedValues
-                        .Select(d => new TableValueDto(Guid.Empty, null, g.Key.ColumnId, d.Value))
-                        .ToList();
-                }
-                else
-                {
-                    // Keep original TableValues
-                    values = g.DistinctBy(tv => tv.Value)
-                        .Select(tv => new TableValueDto(tv.Id, tv.ItemId, tv.ColumnId, tv.Value))
-                        .ToList();
-                }
-
-                return new StatusValuesByColumnDto(g.Key.ColumnId, g.Key.Name, values);
-            })
-            .ToList();
+            result.Add(new StatusValuesByColumnDto(column.Id, column.Name, values));
+        }            
 
         return result;
     }
