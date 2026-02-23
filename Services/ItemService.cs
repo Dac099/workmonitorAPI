@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -76,31 +77,42 @@ public class ItemService : IItemService
         await _db.SaveChangesAsync();
     }
 
-    public async Task MoveToGroupAsync(Guid id, Guid targetGroupId)
+    public async Task MoveToGroupAsync(MoveItemRequestDto dto)
     {
-        var item = await _db.Items.FindAsync(id)
-            ?? throw new KeyNotFoundException("Item not found");
-
-        if (item.DeletedAt != null)
-            throw new KeyNotFoundException("Item not found");
-
-        var targetGroup = await _db.Groups.FindAsync(targetGroupId)
+        // Validate target group exists
+        var targetGroup = await _db.Groups.FindAsync(dto.TargetGroupId)
             ?? throw new KeyNotFoundException("Target group not found");
 
-        var oldGroupId = item.GroupId;
-        var oldPosition = item.Position;
+        // Get all items to move
+        var itemsToMove = await _db.Items
+            .Where(i => dto.ItemIds.Contains(i.Id) && i.DeletedAt == null)
+            .ToListAsync();
 
-        await ShiftPositionsAfterRemovalAsync(oldGroupId, oldPosition, id);
+        if (itemsToMove.Count == 0)
+            throw new KeyNotFoundException("No valid items found to move");
 
+        // Get the maximum position in the target group
         var maxPosition = await _db.Items
-            .Where(i => i.GroupId == targetGroupId && i.DeletedAt == null)
+            .Where(i => i.GroupId == dto.TargetGroupId && i.DeletedAt == null)
             .MaxAsync(i => (int?)i.Position) ?? -1;
 
-        item.GroupId = targetGroup.Id;
-        item.Position = maxPosition + 1;
-        item.UpdatedAt = DateTime.Now;
+        // Move each item to the target group
+        foreach (var item in itemsToMove)
+        {
+            var oldGroupId = item.GroupId;
+            var oldPosition = item.Position;
 
-        _db.Items.Update(item);
+            // Shift positions in the old group
+            await ShiftPositionsAfterRemovalAsync(oldGroupId, oldPosition, item.Id);
+
+            // Update item with new group and position
+            item.GroupId = dto.TargetGroupId;
+            item.Position = ++maxPosition;
+            item.UpdatedAt = DateTime.Now;
+
+            _db.Items.Update(item);
+        }
+
         await _db.SaveChangesAsync();
     }
 
@@ -149,5 +161,94 @@ public class ItemService : IItemService
         }
 
         await _db.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<ItemDto>> CopyItemsAsync(CopyItemsDto dto)
+    {
+        // Validate target group exists
+        var targetGroup = await _db.Groups.FindAsync(dto.TargetGroupId)
+            ?? throw new KeyNotFoundException("Target group not found");
+
+        // Get all source items
+        var sourceItems = await _db.Items
+            .Where(i => dto.ItemIds.Contains(i.Id) && i.DeletedAt == null)
+            .ToListAsync();
+
+        if (sourceItems.Count == 0)
+            throw new KeyNotFoundException("No valid items found to copy");
+
+        // Get the maximum position in the target group
+        var maxPosition = await _db.Items
+            .Where(i => i.GroupId == dto.TargetGroupId && i.DeletedAt == null)
+            .MaxAsync(i => (int?)i.Position) ?? -1;
+
+        var createdItems = new List<ItemDto>();
+        var newItemsWithSourceIds = new Dictionary<Guid, Item>();
+
+        // Create new items in the target group
+        foreach (var sourceItem in sourceItems)
+        {
+            var newItem = new Item
+            {
+                GroupId = dto.TargetGroupId,
+                Name = sourceItem.Name,
+                Position = ++maxPosition,
+                ProjectId = sourceItem.ProjectId,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            _db.Items.Add(newItem);
+            newItemsWithSourceIds[sourceItem.Id] = newItem;
+        }
+
+        await _db.SaveChangesAsync();
+
+        // Get all TableValues for the source items in one query
+        var sourceItemIds = sourceItems.Select(i => i.Id).ToList();
+        var allSourceTableValues = await _db.TableValues
+            .Where(tv => tv.ItemId.HasValue && sourceItemIds.Contains(tv.ItemId.Value) && tv.DeletedAt == null)
+            .ToListAsync();
+
+        // Group TableValues by their source ItemId
+        var tableValuesBySourceItem = allSourceTableValues
+            .Where(tv => tv.ItemId.HasValue)
+            .GroupBy(tv => tv.ItemId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Copy TableValues for each new item
+        foreach (var sourceItemId in sourceItemIds)
+        {
+            if (tableValuesBySourceItem.TryGetValue(sourceItemId, out var sourceTableValues))
+            {
+                var newItem = newItemsWithSourceIds[sourceItemId];
+
+                foreach (var sourceTableValue in sourceTableValues)
+                {
+                    var newTableValue = new TableValue
+                    {
+                        ItemId = newItem.Id,
+                        ColumnId = sourceTableValue.ColumnId,
+                        Value = sourceTableValue.Value,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
+
+                    _db.TableValues.Add(newTableValue);
+                }
+            }
+
+            createdItems.Add(new ItemDto(
+                newItemsWithSourceIds[sourceItemId].Id,
+                newItemsWithSourceIds[sourceItemId].GroupId,
+                newItemsWithSourceIds[sourceItemId].Name,
+                newItemsWithSourceIds[sourceItemId].Position,
+                newItemsWithSourceIds[sourceItemId].ProjectId
+            ));
+        }
+
+        await _db.SaveChangesAsync();
+
+        return createdItems;
     }
 }

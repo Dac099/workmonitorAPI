@@ -52,17 +52,31 @@ public class ItemsController : ControllerBase
         }
     }
 
-    [HttpPut("{id}/move")]
-    public async Task<IActionResult> Move(Guid id, [FromBody] MoveItemRequestDto request)
+    [HttpPut("move")]
+    public async Task<IActionResult> Move([FromBody] MoveItemRequestDto dto)
     {
         try
         {
-            await _itemService.MoveToGroupAsync(id, request.TargetGroupId);
+            await _itemService.MoveToGroupAsync(dto);
             return NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("copy")]
+    public async Task<IActionResult> CopyItems([FromBody] CopyItemsDto dto)
+    {
+        try
+        {
+            var copiedItems = await _itemService.CopyItemsAsync(dto);
+            return Ok(copiedItems);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
     }
 }

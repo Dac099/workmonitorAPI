@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace workmonitorAPI.DTOs.ItemDTOs;
 
-public record MoveItemRequestDto(
+public record CopyItemsDto(
     [Required] IEnumerable<Guid> ItemIds,
     [Required] Guid TargetGroupId
 );
