@@ -67,13 +67,61 @@ public class ItemService : IItemService
         await _db.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(DeleteItemsDto dto)
     {
-        var item = await _db.Items.FindAsync(id)
-            ?? throw new KeyNotFoundException("Item not found");
+        var itemIds = dto.ItemIds.Distinct().ToList();
+        if (itemIds.Count == 0)
+            throw new KeyNotFoundException("No valid items found to delete");
 
-        item.DeletedAt = DateTime.Now;
-        _db.Items.Update(item);
+        var items = await _db.Items
+            .Where(i => itemIds.Contains(i.Id) && i.DeletedAt == null)
+            .ToListAsync();
+
+        if (items.Count == 0)
+            throw new KeyNotFoundException("No valid items found to delete");
+
+        var now = DateTime.Now;
+
+        var tableValues = await _db.TableValues
+            .Where(tv => tv.ItemId.HasValue && itemIds.Contains(tv.ItemId.Value) && tv.DeletedAt == null)
+            .ToListAsync();
+
+        foreach (var tableValue in tableValues)
+        {
+            tableValue.DeletedAt = now;
+            tableValue.UpdatedAt = now;
+            _db.TableValues.Update(tableValue);
+        }
+
+        var chats = await _db.Chats
+            .Where(c => c.ItemId.HasValue && itemIds.Contains(c.ItemId.Value) && c.DeletedAt == null)
+            .ToListAsync();
+
+        foreach (var chat in chats)
+        {
+            chat.DeletedAt = now;
+            chat.UpdatedAt = now;
+            _db.Chats.Update(chat);
+        }
+
+        var subItems = await _db.SubItems
+            .Where(s => itemIds.Contains(s.ItemParent) && s.DeletedAt == null)
+            .ToListAsync();
+
+        foreach (var subItem in subItems)
+        {
+            subItem.DeletedAt = now;
+            subItem.UpdatedAt = now;
+            _db.SubItems.Update(subItem);
+        }
+
+        foreach (var item in items)
+        {
+            item.DeletedAt = now;
+            item.UpdatedAt = now;
+            _db.Items.Update(item);
+        }
+
         await _db.SaveChangesAsync();
     }
 

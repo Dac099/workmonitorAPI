@@ -38,17 +38,17 @@ public class ItemsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete]
+    public async Task<IActionResult> Delete([FromBody] DeleteItemsDto dto)
     {
         try
         {
-            await _itemService.DeleteAsync(id);
+            await _itemService.DeleteAsync(dto);
             return NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(new { message = ex.Message });
         }
     }
 

@@ -9,7 +9,7 @@ public interface IItemService
 {
     Task<ItemDto> CreateAsync(CreateItemDto dto);
     Task UpdateAsync(Guid id, UpdateItemDto dto);
-    Task DeleteAsync(Guid id);
+    Task DeleteAsync(DeleteItemsDto dto);
     Task MoveToGroupAsync(MoveItemRequestDto dto);
     Task<IEnumerable<ItemDto>> CopyItemsAsync(CopyItemsDto dto);
 }
