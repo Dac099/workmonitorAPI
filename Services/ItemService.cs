@@ -88,6 +88,11 @@ public class ItemService : IItemService
             .Where(i => dto.ItemIds.Contains(i.Id) && i.DeletedAt == null)
             .ToListAsync();
 
+        Guid? originalGroupId = itemsToMove.FirstOrDefault()?.GroupId;
+
+        if (originalGroupId == dto.TargetGroupId)
+            throw new InvalidOperationException("Cannot move items to the same group");
+
         if (itemsToMove.Count == 0)
             throw new KeyNotFoundException("No valid items found to move");
 
@@ -173,6 +178,11 @@ public class ItemService : IItemService
         var sourceItems = await _db.Items
             .Where(i => dto.ItemIds.Contains(i.Id) && i.DeletedAt == null)
             .ToListAsync();
+
+        var originalGroupId = sourceItems.FirstOrDefault()?.GroupId;
+
+        if (originalGroupId == dto.TargetGroupId)
+            throw new InvalidOperationException("Cannot copy items to the same group");
 
         if (sourceItems.Count == 0)
             throw new KeyNotFoundException("No valid items found to copy");
