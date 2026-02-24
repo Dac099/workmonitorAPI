@@ -8,6 +8,7 @@ namespace workmonitorAPI.Services.Interfaces;
 public interface IItemService
 {
     Task<ItemDto> CreateAsync(CreateItemDto dto);
+    Task<ItemDetailDto> GetDetailByIdAsync(Guid id);
     Task UpdateAsync(Guid id, UpdateItemDto dto);
     Task DeleteAsync(DeleteItemsDto dto);
     Task MoveToGroupAsync(MoveItemRequestDto dto);

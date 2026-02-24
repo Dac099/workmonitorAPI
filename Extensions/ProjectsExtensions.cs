@@ -15,6 +15,7 @@ public static class ProjectsExtensions
         builder.Services.AddScoped<IItemService, ItemService>();
         builder.Services.AddScoped<ITableValueService, TableValueService>();
         builder.Services.AddScoped<IProyectService, ProyectService>();
+        builder.Services.AddScoped<IChatService, ChatService>();
 
         return builder;
     }

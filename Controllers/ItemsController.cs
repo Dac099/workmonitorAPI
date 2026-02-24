@@ -24,6 +24,20 @@ public class ItemsController : ControllerBase
         return CreatedAtAction(nameof(Create), new { id = itemDto.Id }, itemDto);
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetDetail(Guid id)
+    {
+        try
+        {
+            var item = await _itemService.GetDetailByIdAsync(id);
+            return Ok(item);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateItemDto dto)
     {

@@ -4,7 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using workmonitorAPI.Data;
+using workmonitorAPI.DTOs.ChatDTOs;
 using workmonitorAPI.DTOs.ItemDTOs;
+using workmonitorAPI.DTOs.ProyectDTOs;
+using workmonitorAPI.DTOs.SubItemDTOs;
 using workmonitorAPI.Models;
 using workmonitorAPI.Services.Interfaces;
 
@@ -40,6 +43,56 @@ public class ItemService : IItemService
         _db.Items.Add(item);
         await _db.SaveChangesAsync();
         return new ItemDto(item.Id, item.GroupId, item.Name, item.Position, item.ProjectId);
+    }
+
+    public async Task<ItemDetailDto> GetDetailByIdAsync(Guid id)
+    {
+        var item = await _db.Items
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null)
+            ?? throw new KeyNotFoundException("Item not found");
+
+        var subItems = await _db.SubItems
+            .AsNoTracking()
+            .Where(s => s.ItemParent == id && s.DeletedAt == null)
+            .Select(s => new SubItemDto(s.Id, s.Name, s.ItemParent))
+            .ToListAsync();
+
+        var chats = await _db.Chats
+            .AsNoTracking()
+            .Where(c => c.ItemId == id && c.DeletedAt == null)
+            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks))
+            .ToListAsync();
+
+        ProjectDetailDto? project = null;
+        if (!string.IsNullOrWhiteSpace(item.ProjectId))
+        {
+            project = await _db.TbProyects
+                .AsNoTracking()
+                .Include(p => p.IdClienteNavigation)
+                .Where(p => p.IdProyect == item.ProjectId)
+                .Select(p => new ProjectDetailDto(
+                    p.IdProyect,
+                    p.NomProyecto,
+                    p.DescProyecto,
+                    p.FechaInicio,
+                    p.FechaFin,
+                    p.IdCliente,
+                    p.IdClienteNavigation != null ? p.IdClienteNavigation.NomCliente : null
+                ))
+                .FirstOrDefaultAsync();
+        }
+
+        return new ItemDetailDto(
+            item.Id,
+            item.GroupId,
+            item.Name,
+            item.Position,
+            item.ProjectId,
+            project,
+            subItems,
+            chats
+        );
     }
 
     public async Task UpdateAsync(Guid id, UpdateItemDto dto)
