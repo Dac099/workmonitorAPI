@@ -27,7 +27,7 @@ public class ProyectService : IProyectService
         if (!string.IsNullOrWhiteSpace(search))
         {
             var searchLower = search.ToLower();
-            query = query.Where(p => 
+            query = query.Where(p =>
                 p.IdProyect.ToLower().Contains(searchLower) ||
                 (p.NomProyecto != null && p.NomProyecto.ToLower().Contains(searchLower)) ||
                 (p.IdClienteNavigation != null && p.IdClienteNavigation.NomCliente != null && p.IdClienteNavigation.NomCliente.ToLower().Contains(searchLower))
@@ -44,5 +44,25 @@ public class ProyectService : IProyectService
             .ToListAsync();
 
         return result;
+    }
+
+    public async Task<ProyectDto> GetProyectByIdAsync(Guid id)
+    {
+        var proyect = await _db.TbProyects
+            .AsNoTracking()
+            .Include(p => p.IdClienteNavigation)
+            .FirstOrDefaultAsync(p => p.IdProyect == id.ToString());
+
+        if (proyect == null)
+        {
+            throw new KeyNotFoundException("Proyect not found");
+        }
+
+        return new ProyectDto(
+            proyect.IdProyect,
+            proyect.NomProyecto,
+            proyect.IdClienteNavigation != null ? proyect.IdClienteNavigation.NomCliente : null,
+            proyect.IdCliente
+        );
     }
 }

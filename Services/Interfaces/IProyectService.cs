@@ -7,4 +7,5 @@ namespace workmonitorAPI.Services.Interfaces;
 public interface IProyectService
 {
     Task<IEnumerable<ProyectDto>> GetProyectsAsync(string? search);
+    Task<ProyectDto> GetProyectByIdAsync(Guid id);
 }

@@ -23,4 +23,18 @@ public class ProyectsController : ControllerBase
         var result = await _proyectService.GetProyectsAsync(search);
         return Ok(result);
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        try
+        {
+            var proyect = await _proyectService.GetProyectByIdAsync(id);
+            return Ok(proyect);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
