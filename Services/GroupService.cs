@@ -28,7 +28,7 @@ public class GroupService : IGroupService
         var maxPosition = await _db.Groups
             .Where(g => g.BoardId == dto.BoardId && g.DeletedAt == null)
             .MaxAsync(g => (int?)g.Position) ?? -1;
-        
+
         var nextPosition = maxPosition + 1;
 
         var group = new Group
@@ -116,7 +116,7 @@ public class GroupService : IGroupService
         var chats = await _db.Chats
             .AsNoTracking()
             .Where(c => c.ItemId != null && itemIds.Contains(c.ItemId.Value) && c.DeletedAt == null)
-            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks))
+            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks, c.CreatedAt.ToString()))
             .ToListAsync();
 
         var valuesByItem = values
@@ -130,7 +130,7 @@ public class GroupService : IGroupService
             .GroupBy(c => c.ItemId!.Value)
             .ToDictionary(
                 g => g.Key,
-                g => g.Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks)).ToList()
+                g => g.Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks, c.CreatedAt)).ToList()
             );
 
         var itemDtos = items.Select(i =>

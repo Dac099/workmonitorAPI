@@ -61,7 +61,7 @@ public class ItemService : IItemService
         var chats = await _db.Chats
             .AsNoTracking()
             .Where(c => c.ItemId == id && c.DeletedAt == null)
-            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks))
+            .Select(c => new ChatDto(c.Id, c.ItemId, c.Message, c.CreatedBy, c.Responses, c.Tasks, c.CreatedAt.ToString()))
             .ToListAsync();
 
         ProjectDetailDto? project = null;

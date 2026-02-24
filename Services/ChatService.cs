@@ -45,7 +45,8 @@ public class ChatService : IChatService
         chat.Message,
         chat.CreatedBy,
         chat.Responses,
-        chat.Tasks
+        chat.Tasks,
+        chat.CreatedAt.ToString()
     );
   }
 
@@ -77,7 +78,8 @@ public class ChatService : IChatService
         chat.Message,
         chat.CreatedBy,
         chat.Responses,
-        chat.Tasks
+        chat.Tasks,
+        chat.CreatedAt.ToString()
     );
   }
 

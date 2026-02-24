@@ -6,5 +6,6 @@ public record ChatDto(
     string? Message,
     string? CreatedBy,
     string? Responses,
-    string? Tasks
+    string? Tasks,
+    string? CreatedAt
 );
