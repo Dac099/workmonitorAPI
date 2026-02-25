@@ -46,12 +46,12 @@ public class ProyectService : IProyectService
         return result;
     }
 
-    public async Task<ProyectDto> GetProyectByIdAsync(Guid id)
+    public async Task<ProyectDto> GetProyectByIdAsync(string id)
     {
         var proyect = await _db.TbProyects
             .AsNoTracking()
             .Include(p => p.IdClienteNavigation)
-            .FirstOrDefaultAsync(p => p.IdProyect == id.ToString());
+            .FirstOrDefaultAsync(p => p.IdProyect == id);
 
         if (proyect == null)
         {
