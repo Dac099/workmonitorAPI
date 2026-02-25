@@ -4,5 +4,6 @@ namespace workmonitorAPI.DTOs.ItemDTOs;
 
 public record UpdateItemDto(
     [MaxLength(100)] string? Name,
-    int? Position
+    int? Position,
+    string? ProjectId
 );

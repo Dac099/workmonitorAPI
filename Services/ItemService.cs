@@ -108,6 +108,8 @@ public class ItemService : IItemService
 
         if (dto.Name != null)
             item.Name = dto.Name;
+        if (dto.ProjectId != null)
+            item.ProjectId = dto.ProjectId;
         if (newPosition.HasValue)
         {
             item.Position = newPosition.Value;
