@@ -46,6 +46,20 @@ public class BoardsController : ControllerBase
         return Ok(boards);
     }
 
+    [HttpGet("cobranza")]
+    public async Task<ActionResult<BoardDto>> GetCollectionBoard()
+    {
+        try
+        {
+            var board = await _boardService.GetCollectionBoardAsync();
+            return Ok(board);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpGet("workspace/{workspaceId}")]
     public async Task<ActionResult<IEnumerable<BoardDto>>> GetByWorkspaceId(Guid workspaceId)
     {

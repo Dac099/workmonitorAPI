@@ -24,11 +24,11 @@ public class TableValueService : ITableValueService
     };
 
     private static bool IsCompanyColumn(string name) =>
-        _companyKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
+        _companyKeywords.Any(k => k.Contains(name, StringComparison.OrdinalIgnoreCase));
 
     private static bool IsStatusColumn(string name) =>
-        _statusKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase));
-    
+        _statusKeywords.Any(k => k.Contains(name, StringComparison.OrdinalIgnoreCase));
+
     public TableValueService(AppDbContext db)
     {
         _db = db;
@@ -144,7 +144,7 @@ public class TableValueService : ITableValueService
         var tableValues = await _db.TableValues
             .AsNoTracking()
             .Where(tv => columnIds.Contains(tv.ColumnId) && tv.ItemId == null && tv.DeletedAt == null)
-            .ToListAsync();            
+            .ToListAsync();
 
         var definedValues = await _db.DefinedColumnsValues
             .AsNoTracking()
@@ -188,7 +188,7 @@ public class TableValueService : ITableValueService
             }
 
             result.Add(new StatusValuesByColumnDto(column.Id, column.Name, values));
-        }            
+        }
 
         return result;
     }

@@ -46,6 +46,20 @@ public class BoardService : IBoardService
         return new BoardDto(board.Id, board.WorkspaceId, board.Name, board.Description);
     }
 
+    public async Task<BoardDto> GetCollectionBoardAsync()
+    {
+        var board = await _db.Boards
+            .AsNoTracking()
+            .Where(b => b.DeletedAt == null
+                && EF.Functions.Like(b.Workspace.Name, "%Cobranza%")
+                && EF.Functions.Like(b.Name, "Cobranza%"))
+            .Select(b => new BoardDto(b.Id, b.WorkspaceId, b.Name, b.Description))
+            .FirstOrDefaultAsync()
+            ?? throw new KeyNotFoundException("Board not found");
+
+        return board;
+    }
+
     public async Task DeleteAsync(Guid id)
     {
         var board = await _db.Boards.FindAsync(id)

@@ -12,6 +12,7 @@ public interface IGroupService
     Task DeleteAsync(Guid id);
     Task UpdateAsync(Guid id, UpdateGroupDto dto);
     Task<IEnumerable<GroupDto>> GetByBoardIdAsync(Guid boardId);
+    Task<IEnumerable<GroupDto>> SearchAsync(SearchGroupsQueryDto queryDto);
     Task CopyToAsync(Guid groupId, Guid targetBoardId);
     Task MoveToAsync(Guid groupId, Guid targetBoardId);
 }

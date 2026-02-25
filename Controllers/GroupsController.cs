@@ -60,6 +60,13 @@ public class GroupsController : ControllerBase
         return Ok(groups);
     }
 
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<GroupDto>>> Search([FromQuery] SearchGroupsQueryDto queryDto)
+    {
+        var groups = await _groupService.SearchAsync(queryDto);
+        return Ok(groups);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<GroupDetailDto>> GetById(Guid id)
     {

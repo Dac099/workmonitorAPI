@@ -84,6 +84,34 @@ public class GroupService : IGroupService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<GroupDto>> SearchAsync(SearchGroupsQueryDto queryDto)
+    {
+        var query = _db.Groups
+            .AsNoTracking()
+            .Where(g => g.DeletedAt == null)
+            .AsQueryable();
+
+        if (queryDto.BoardId.HasValue)
+            query = query.Where(g => g.BoardId == queryDto.BoardId.Value);
+
+        if (queryDto.GroupId.HasValue)
+            query = query.Where(g => g.Id == queryDto.GroupId.Value);
+
+        if (!string.IsNullOrWhiteSpace(queryDto.GroupName))
+        {
+            var normalizedGroupName = queryDto.GroupName.ToLower().Replace(" ", string.Empty);
+            query = query.Where(g =>
+                EF.Functions.Like(
+                    (g.Name ?? string.Empty).ToLower().Replace(" ", string.Empty),
+                    $"%{normalizedGroupName}%"));
+        }
+
+        return await query
+            .OrderBy(g => g.Position)
+            .Select(g => new GroupDto(g.Id, g.BoardId, g.Name, g.Position, g.Color))
+            .ToListAsync();
+    }
+
     public async Task<GroupDetailDto> GetByIdAsync(Guid id)
     {
         var group = await _db.Groups
