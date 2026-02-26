@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using workmonitorAPI.DTOs.BoardDTOs;
+using workmonitorAPI.DTOs.GanttDTOs;
 using workmonitorAPI.Services.Interfaces;
 
 namespace workmonitorAPI.Controllers;
@@ -44,6 +45,20 @@ public class BoardsController : ControllerBase
     {
         var boards = await _boardService.GetAllWithWorkspaceNameAsync();
         return Ok(boards);
+    }
+
+    [HttpGet("{boardId}/gantt")]
+    public async Task<ActionResult<GanttBoardDto>> GetGanttData(Guid boardId, [FromQuery] Guid? timelineColumnId)
+    {
+        try
+        {
+            var data = await _boardService.GetGanttDataAsync(boardId, timelineColumnId);
+            return Ok(data);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet("cobranza")]

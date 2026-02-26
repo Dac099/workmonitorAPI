@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using workmonitorAPI.Data;
 using workmonitorAPI.DTOs.BoardDTOs;
+using workmonitorAPI.DTOs.GanttDTOs;
 using workmonitorAPI.Models;
 using workmonitorAPI.Services.Interfaces;
 
@@ -102,7 +103,97 @@ public class BoardService : IBoardService
                 b.WorkspaceId,
                 b.Workspace.Name,
                 b.Name,
-                b.Description))
+                b.Description,
+                _db.Columns
+                    .AsNoTracking()
+                    .Any(c => c.BoardId == b.Id && c.Type == "timeline" && c.DeletedAt == null)))
             .ToListAsync();
+    }
+
+    public async Task<GanttBoardDto> GetGanttDataAsync(Guid boardId, Guid? timelineColumnId)
+    {
+        var boardExists = await _db.Boards
+            .AsNoTracking()
+            .AnyAsync(b => b.Id == boardId && b.DeletedAt == null);
+
+        if (!boardExists)
+            throw new KeyNotFoundException("Board not found");
+
+        var groups = await _db.Groups
+            .AsNoTracking()
+            .Where(g => g.BoardId == boardId && g.DeletedAt == null)
+            .OrderBy(g => g.Position)
+            .Select(g => new GanttGroupDto(g.Id, g.BoardId, g.Name, g.Position, g.Color))
+            .ToListAsync();
+
+        var groupIds = groups.Select(g => g.Id).ToList();
+
+        var items = await _db.Items
+            .AsNoTracking()
+            .Where(i => groupIds.Contains(i.GroupId) && i.DeletedAt == null)
+            .OrderBy(i => i.Position)
+            .Select(i => new { i.Id, i.GroupId, i.Name, i.Position })
+            .ToListAsync();
+
+        var timelineColumns = await _db.Columns
+            .AsNoTracking()
+            .Where(c => c.BoardId == boardId && c.Type == "timeline" && c.DeletedAt == null)
+            .OrderBy(c => c.Position)
+            .ToListAsync();
+
+        var selectedColumn = timelineColumns.FirstOrDefault(c => c.Id == timelineColumnId)
+            ?? timelineColumns.FirstOrDefault();
+
+        Guid? selectedColumnId = selectedColumn?.Id;
+        string? selectedColumnName = selectedColumn?.Name;
+
+        var itemIds = items.Select(i => i.Id).ToList();
+
+        var timelineValues = new Dictionary<Guid, (Guid Id, string? Value)>();
+
+        if (selectedColumnId.HasValue && itemIds.Count > 0)
+        {
+            var tableValues = await _db.TableValues
+                .AsNoTracking()
+                .Where(tv =>
+                    tv.ItemId != null
+                    && itemIds.Contains(tv.ItemId.Value)
+                    && tv.ColumnId == selectedColumnId.Value
+                    && tv.DeletedAt == null)
+                .Select(tv => new { tv.Id, tv.ItemId, tv.Value, tv.UpdatedAt })
+                .ToListAsync();
+
+            timelineValues = tableValues
+                .Where(tv => tv.ItemId.HasValue)
+                .GroupBy(tv => tv.ItemId!.Value)
+                .Select(g => g.OrderByDescending(tv => tv.UpdatedAt).First())
+                .ToDictionary(tv => tv.ItemId!.Value, tv => (tv.Id, tv.Value));
+        }
+
+        var itemDtos = items.Select(i =>
+        {
+            if (timelineValues.TryGetValue(i.Id, out var timelineValue))
+            {
+                return new GanttItemDto(
+                    i.Id,
+                    i.GroupId,
+                    i.Name,
+                    i.Position,
+                    timelineValue.Id,
+                    timelineValue.Value
+                );
+            }
+
+            return new GanttItemDto(
+                i.Id,
+                i.GroupId,
+                i.Name,
+                i.Position,
+                null,
+                null
+            );
+        }).ToList();
+
+        return new GanttBoardDto(boardId, selectedColumnId, selectedColumnName, groups, itemDtos);
     }
 }

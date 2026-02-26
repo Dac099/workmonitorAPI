@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using workmonitorAPI.DTOs.BoardDTOs;
+using workmonitorAPI.DTOs.GanttDTOs;
 using workmonitorAPI.Models;
 
 namespace workmonitorAPI.Services.Interfaces;
@@ -15,4 +16,5 @@ public interface IBoardService
     Task UpdateAsync(Guid id, UpdateBoardDto dto);
     Task<IEnumerable<BoardDto>> GetByWorkspaceIdAsync(Guid workspaceId);
     Task<IEnumerable<BoardWithWorkspaceNameDto>> GetAllWithWorkspaceNameAsync();
+    Task<GanttBoardDto> GetGanttDataAsync(Guid boardId, Guid? timelineColumnId);
 }

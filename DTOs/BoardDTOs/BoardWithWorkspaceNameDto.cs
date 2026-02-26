@@ -7,5 +7,6 @@ public record BoardWithWorkspaceNameDto(
     Guid WorkspaceId,
     string WorkspaceName,
     string Name,
-    string? Description
+    string? Description,
+    bool HasTimeline
 );
