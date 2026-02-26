@@ -10,5 +10,5 @@ public interface ISubItemService
   Task<IEnumerable<SubItemWithValuesDto>> GetByItemIdWithValuesAsync(Guid itemId);
   Task<SubItemDto> CreateAsync(CreateSubItemDto dto);
   Task UpdateAsync(Guid id, UpdateSubItemDto dto);
-  Task DeleteAsync(DeleteSubItemsDto dto);
+  Task DeleteAsync(Guid id);
 }

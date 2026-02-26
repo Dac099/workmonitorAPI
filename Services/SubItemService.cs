@@ -38,22 +38,35 @@ public class SubItemService : ISubItemService
     if (subItems.Count == 0)
       return [];
 
+    var subItemIds = subItems.Select(s => s.Id).ToList();
+
     var values = await _db.TableValues
         .AsNoTracking()
-        .Where(tv => tv.ItemId == itemId && tv.DeletedAt == null)
+      .Where(tv => tv.ItemId.HasValue && subItemIds.Contains(tv.ItemId.Value) && tv.DeletedAt == null)
         .Join(
             _db.Columns.AsNoTracking(),
             tv => tv.ColumnId,
             c => c.Id,
-            (tv, c) => new TableValueWithTypeDto(tv.Id, tv.ItemId, tv.ColumnId, tv.Value, c.Type)
+        (tv, c) => new
+        {
+          ItemId = tv.ItemId,
+          Value = new TableValueWithTypeDto(tv.Id, tv.ItemId, tv.ColumnId, tv.Value, c.Type)
+        }
         )
         .ToListAsync();
+
+    var valuesBySubItemId = values
+      .Where(v => v.ItemId.HasValue)
+      .GroupBy(v => v.ItemId!.Value)
+      .ToDictionary(g => g.Key, g => g.Select(x => x.Value).ToList());
 
     return subItems.Select(s => new SubItemWithValuesDto(
         s.Id,
         s.ItemParent,
         s.Name,
-        values
+      valuesBySubItemId.TryGetValue(s.Id, out var subItemValues)
+        ? subItemValues
+        : []
     )).ToList();
   }
 
@@ -98,27 +111,17 @@ public class SubItemService : ISubItemService
     await _db.SaveChangesAsync();
   }
 
-  public async Task DeleteAsync(DeleteSubItemsDto dto)
+  public async Task DeleteAsync(Guid id)
   {
-    var subItemIds = dto.SubItemIds.Distinct().ToList();
-    if (subItemIds.Count == 0)
-      throw new KeyNotFoundException("No valid subitems found to delete");
-
-    var subItems = await _db.SubItems
-        .Where(s => subItemIds.Contains(s.Id) && s.DeletedAt == null)
-        .ToListAsync();
-
-    if (subItems.Count == 0)
-      throw new KeyNotFoundException("No valid subitems found to delete");
+    var subItem = await _db.SubItems
+        .FirstOrDefaultAsync(s => s.Id == id && s.DeletedAt == null)
+        ?? throw new KeyNotFoundException("SubItem not found");
 
     var now = DateTime.Now;
-    foreach (var subItem in subItems)
-    {
-      subItem.DeletedAt = now;
-      subItem.UpdatedAt = now;
-    }
+    subItem.DeletedAt = now;
+    subItem.UpdatedAt = now;
 
-    _db.SubItems.UpdateRange(subItems);
+    _db.SubItems.Update(subItem);
     await _db.SaveChangesAsync();
   }
 }

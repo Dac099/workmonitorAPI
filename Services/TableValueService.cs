@@ -63,12 +63,6 @@ public class TableValueService : ITableValueService
         var column = await _db.Columns.FindAsync(dto.ColumnId)
             ?? throw new KeyNotFoundException("Column not found");
 
-        if (dto.ItemId.HasValue)
-        {
-            var _ = await _db.Items.FindAsync(dto.ItemId.Value)
-                ?? throw new KeyNotFoundException("Item not found");
-        }
-
         if (IsCompanyColumn(column.Name))
         {
             _db.DefinedColumnsValues.Add(new DefinedColumnsValue

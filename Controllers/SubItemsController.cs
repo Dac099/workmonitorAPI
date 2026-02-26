@@ -59,12 +59,12 @@ public class SubItemsController : ControllerBase
     }
   }
 
-  [HttpDelete]
-  public async Task<IActionResult> Delete([FromBody] DeleteSubItemsDto dto)
+  [HttpDelete("{id}")]
+  public async Task<IActionResult> Delete(Guid id)
   {
     try
     {
-      await _subItemService.DeleteAsync(dto);
+      await _subItemService.DeleteAsync(id);
       return NoContent();
     }
     catch (KeyNotFoundException ex)
