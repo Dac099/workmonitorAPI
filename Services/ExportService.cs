@@ -31,6 +31,7 @@ public class ExportService : IExportService
             ?? throw new KeyNotFoundException("Board not found");
 
         using var workbook = new XLWorkbook();
+        var usedSheetNames = new HashSet<string>(); // Rastrear nombres de hojas usadas
 
         // Obtener columnas seleccionadas
         var columns = await _db.Columns
@@ -66,8 +67,9 @@ public class ExportService : IExportService
                     && exportDto.ColumnIds.Contains(tv.ColumnId))
                 .ToListAsync();
 
-            // Crear la hoja para el grupo
-            var worksheet = workbook.Worksheets.Add(SanitizeSheetName(group.Name));
+            // Crear la hoja para el grupo con nombre único
+            var sheetName = GetUniqueSheetName(group.Name, usedSheetNames);
+            var worksheet = workbook.Worksheets.Add(sheetName);
 
             // Agregar encabezados
             worksheet.Cell(1, 1).Value = "Item";
@@ -374,5 +376,35 @@ public class ExportService : IExportService
         }
 
         return name;
+    }
+
+    private string GetUniqueSheetName(string name, HashSet<string> usedNames)
+    {
+        var sanitized = SanitizeSheetName(name);
+        
+        // Si el nombre ya existe, agregar un sufijo numérico
+        if (usedNames.Contains(sanitized))
+        {
+            int counter = 1;
+            string uniqueName;
+            
+            do
+            {
+                // Dejar espacio para el sufijo (_1, _2, etc.)
+                var suffix = $"_{counter}";
+                var baseName = sanitized.Length + suffix.Length > 31
+                    ? sanitized.Substring(0, 31 - suffix.Length)
+                    : sanitized;
+                
+                uniqueName = baseName + suffix;
+                counter++;
+            } while (usedNames.Contains(uniqueName));
+            
+            usedNames.Add(uniqueName);
+            return uniqueName;
+        }
+        
+        usedNames.Add(sanitized);
+        return sanitized;
     }
 }
