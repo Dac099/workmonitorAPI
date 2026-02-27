@@ -13,10 +13,12 @@ namespace workmonitorAPI.Controllers;
 public class BoardsController : ControllerBase
 {
     private readonly IBoardService _boardService;
+    private readonly IExportService _exportService;
 
-    public BoardsController(IBoardService boardService)
+    public BoardsController(IBoardService boardService, IExportService exportService)
     {
         _boardService = boardService;
+        _exportService = exportService;
     }
 
     [HttpPost]
@@ -103,6 +105,24 @@ public class BoardsController : ControllerBase
         {
             await _boardService.DeleteAsync(id);
             return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("{boardId}/export")]
+    public async Task<IActionResult> ExportToExcel(Guid boardId, [FromBody] ExportBoardDto exportDto)
+    {
+        try
+        {
+            var excelBytes = await _exportService.ExportBoardToExcelAsync(boardId, exportDto);
+            
+            var board = await _boardService.GetByIdAsync(boardId);
+            var fileName = $"{board.Name}_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            
+            return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
         catch (KeyNotFoundException)
         {
