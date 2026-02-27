@@ -6,5 +6,6 @@ public record BoardDto(
     Guid Id,
     Guid WorkspaceId,
     string Name,
-    string? Description
+    string? Description,
+    bool HasTimeline
 );

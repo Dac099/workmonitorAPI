@@ -25,10 +25,19 @@ public class BoardService : IBoardService
         var board = await _db.Boards
             .AsNoTracking()
             .Where(b => b.Id == id && b.DeletedAt == null)
-            .Select(b => new BoardDto(b.Id, b.WorkspaceId, b.Name, b.Description))
+            .Select(b => new {
+                b.Id,
+                b.WorkspaceId,
+                b.Name,
+                b.Description,
+                HasTimeline = _db.Columns
+                    .AsNoTracking()
+                    .Any(c => c.BoardId == b.Id && c.Type == "timeline" && c.DeletedAt == null)
+            })
             .FirstOrDefaultAsync()
             ?? throw new KeyNotFoundException("Board not found");
-        return board;
+        
+        return new BoardDto(board.Id, board.WorkspaceId, board.Name, board.Description, board.HasTimeline);
     }
 
     public async Task<BoardDto> CreateAsync(CreateBoardDto dto)
@@ -44,7 +53,7 @@ public class BoardService : IBoardService
 
         _db.Boards.Add(board);
         await _db.SaveChangesAsync();
-        return new BoardDto(board.Id, board.WorkspaceId, board.Name, board.Description);
+        return new BoardDto(board.Id, board.WorkspaceId, board.Name, board.Description, false);
     }
 
     public async Task<BoardDto> GetCollectionBoardAsync()
@@ -54,11 +63,19 @@ public class BoardService : IBoardService
             .Where(b => b.DeletedAt == null
                 && EF.Functions.Like(b.Workspace.Name, "%Cobranza%")
                 && EF.Functions.Like(b.Name, "Cobranza%"))
-            .Select(b => new BoardDto(b.Id, b.WorkspaceId, b.Name, b.Description))
+            .Select(b => new {
+                b.Id,
+                b.WorkspaceId,
+                b.Name,
+                b.Description,
+                HasTimeline = _db.Columns
+                    .AsNoTracking()
+                    .Any(c => c.BoardId == b.Id && c.Type == "timeline" && c.DeletedAt == null)
+            })
             .FirstOrDefaultAsync()
             ?? throw new KeyNotFoundException("Board not found");
 
-        return board;
+        return new BoardDto(board.Id, board.WorkspaceId, board.Name, board.Description, board.HasTimeline);
     }
 
     public async Task DeleteAsync(Guid id)
@@ -89,7 +106,14 @@ public class BoardService : IBoardService
         return await _db.Boards
             .AsNoTracking()
             .Where(b => b.WorkspaceId == workspaceId && b.DeletedAt == null)
-            .Select(b => new BoardDto(b.Id, b.WorkspaceId, b.Name, b.Description))
+            .Select(b => new BoardDto(
+                b.Id,
+                b.WorkspaceId,
+                b.Name,
+                b.Description,
+                _db.Columns
+                    .AsNoTracking()
+                    .Any(c => c.BoardId == b.Id && c.Type == "timeline" && c.DeletedAt == null)))
             .ToListAsync();
     }
 
